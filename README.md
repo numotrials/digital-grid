@@ -2,7 +2,12 @@
 
 What if you could build a virtual city-sized power grid, simulate thousands of energy devices, and develop algorithms that help balance electricity demand in real time?
 
-This is a next-generation energy simulation platform that combines **Digital Twins**, **IoT**, **Renewable Energy Systems**, **Battery Storage**, **Smart Metering**, and **Artificial Intelligence** into a single environment.
+Such a system has two parts:
+
+1. The electrical system, consisting of the grid and its devices
+2. The information system, which monitors and controls the electrical system
+
+This repository is a next-generation energy simulation platform that combines **Digital Twins**, **IoT**, **Renewable Energy Systems**, **Battery Storage**, **Smart Metering**, and **Artificial Intelligence** into a single environment.
 
 Resulting in realistic software models of:
 
