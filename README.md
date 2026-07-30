@@ -53,3 +53,14 @@ This is not a classroom exercise. You will contribute to a platform that mirrors
 * AI for Energy
 
 **Design. Simulate. Predict. Optimize. Build the digital grid before it exists in the real world.**
+
+## Setup
+
+This project uses python with a hierarchical workspace.
+
+History:
+
+1. `uv init --bare --vcs git` done - this made the `pyproject.toml` at the base of the repo
+1. `uv add --dev ...` done - to add development dependencies
+1. `cd` to the folder where you want to start a sub-project. `uv init` there will add this to the parent workspace automatically
+1. In the code, you can do `import devices.battery`
