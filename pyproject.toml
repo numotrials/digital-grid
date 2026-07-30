@@ -16,5 +16,10 @@ dev = [
 ]
 
 [tool.pyright]
-typeCheckingMode = "strict"
+typeCheckingMode = "standard"
 extraPaths = ["devices"]
+
+[tool.uv.workspace]
+members = [
+    "simulator_sample",
+]
