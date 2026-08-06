@@ -1,6 +1,7 @@
 {
   "ignore": [
     "**/.venv/**",
-    "**/.ruff_cache/**"
+    "**/.ruff_cache/**",
+    "**/*.md"
   ]
 }

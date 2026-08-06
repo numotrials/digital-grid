@@ -33,10 +33,11 @@ git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
 
 echo "🧪 Run tests with coverage"
 rm -rf .coverage
-coverage run -p -m unittest discover -s devices
-coverage combine
+coverage run -p -m unittest discover
 coverage report --fail-under=100
 coverage html
 
 echo "📦 Audit dependencies"
 pip-audit
+
+echo "✅ All checks passed!"
