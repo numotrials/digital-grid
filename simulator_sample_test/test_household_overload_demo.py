@@ -206,55 +206,10 @@ class StepAllPowerFlowTests(unittest.TestCase):
         heater = demo.HeaterLoad(power_kw=25.0)
         return battery, inverter, lighting, heater
 
-    def test_lighting_load_power_written_to_network_in_mw(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        demo.step_all(
-            self.net,
-            self.load_lighting,
-            self.load_heater,
-            self.sgen_battery,
-            battery,
-            inverter,
-            lighting,
-            heater,
-            dt_hours=0.25,
-        )
-        self.assertAlmostEqual(self.net.load.at[self.load_lighting, "p_mw"], 0.5 / 1000.0)
-
-    def test_heater_load_power_written_to_network_in_mw(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        demo.step_all(
-            self.net,
-            self.load_lighting,
-            self.load_heater,
-            self.sgen_battery,
-            battery,
-            inverter,
-            lighting,
-            heater,
-            dt_hours=0.25,
-        )
-        self.assertAlmostEqual(self.net.load.at[self.load_heater, "p_mw"], 25.0 / 1000.0)
-
-    def test_inverter_ac_output_written_to_battery_sgen_in_mw(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        demo.step_all(
-            self.net,
-            self.load_lighting,
-            self.load_heater,
-            self.sgen_battery,
-            battery,
-            inverter,
-            lighting,
-            heater,
-            dt_hours=0.25,
-        )
-        # 6 kW DC * 0.95 = 5.7 kW, clipped to rated 5.0 kVA
-        self.assertAlmostEqual(self.net.sgen.at[self.sgen_battery, "p_mw"], 5.0 / 1000.0)
-
-    def test_power_flow_is_solved_and_line_loading_recorded(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        with redirect_stdout(io.StringIO()):
+    def _run_step(self, battery, inverter, lighting, heater, dt_hours=0.25):
+        """Drive one power-flow tick and return the captured stdout."""
+        buf = io.StringIO()
+        with redirect_stdout(buf):
             demo.step_all(
                 self.net,
                 self.load_lighting,
@@ -264,41 +219,34 @@ class StepAllPowerFlowTests(unittest.TestCase):
                 inverter,
                 lighting,
                 heater,
-                dt_hours=0.25,
+                dt_hours=dt_hours,
             )
+        return buf.getvalue()
+
+    def test_lighting_load_power_written_to_network_in_mw(self):
+        self._run_step(*self._make_assets())
+        self.assertAlmostEqual(self.net.load.at[self.load_lighting, "p_mw"], 0.5 / 1000.0)
+
+    def test_heater_load_power_written_to_network_in_mw(self):
+        self._run_step(*self._make_assets())
+        self.assertAlmostEqual(self.net.load.at[self.load_heater, "p_mw"], 25.0 / 1000.0)
+
+    def test_inverter_ac_output_written_to_battery_sgen_in_mw(self):
+        # 6 kW DC * 0.95 = 5.7 kW, clipped to rated 5.0 kVA
+        self._run_step(*self._make_assets())
+        self.assertAlmostEqual(self.net.sgen.at[self.sgen_battery, "p_mw"], 5.0 / 1000.0)
+
+    def test_power_flow_is_solved_and_line_loading_recorded(self):
+        self._run_step(*self._make_assets())
         self.assertIn("loading_percent", self.net.res_line.columns)
         self.assertGreater(self.net.res_line.at[0, "loading_percent"], 0.0)
 
     def test_oversized_heater_drives_line_into_overload(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        with redirect_stdout(io.StringIO()):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
+        self._run_step(*self._make_assets())
         self.assertGreater(self.net.res_line.at[0, "loading_percent"], 100.0)
 
     def test_house_bus_voltage_stays_near_per_unit(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        with redirect_stdout(io.StringIO()):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
+        self._run_step(*self._make_assets())
         vm = self.net.res_bus.at[1, "vm_pu"]
         self.assertGreater(vm, 0.0)
         self.assertLess(abs(vm - 1.0), 0.1)
@@ -306,89 +254,31 @@ class StepAllPowerFlowTests(unittest.TestCase):
     def test_step_decrements_battery_state_of_charge(self):
         battery, inverter, lighting, heater = self._make_assets()
         soc_before = battery.soc
-        with redirect_stdout(io.StringIO()):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
+        self._run_step(battery, inverter, lighting, heater)
         self.assertLess(battery.soc, soc_before)
 
     def test_overload_message_printed_when_line_exceeds_rating(self):
-        battery, inverter, lighting, heater = self._make_assets()
-        buf = io.StringIO()
-        with redirect_stdout(buf):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
-        self.assertIn("OVERLOAD", buf.getvalue())
+        output = self._run_step(*self._make_assets())
+        self.assertIn("OVERLOAD", output)
 
     def test_no_overload_message_below_line_rating(self):
         # Tiny loads so the line stays well within its thermal limit.
-        battery = demo.BatteryTwin(capacity_kwh=10.0, soc=0.8, discharge_kw=1.0)
-        inverter = demo.Inverter(rated_kva=5.0, efficiency=1.0)
-        lighting = demo.LightingLoad(power_kw=0.1)
-        heater = demo.HeaterLoad(power_kw=0.1)
-        buf = io.StringIO()
-        with redirect_stdout(buf):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
-        self.assertNotIn("OVERLOAD", buf.getvalue())
+        output = self._run_step(
+            demo.BatteryTwin(capacity_kwh=10.0, soc=0.8, discharge_kw=1.0),
+            demo.Inverter(rated_kva=5.0, efficiency=1.0),
+            demo.LightingLoad(power_kw=0.1),
+            demo.HeaterLoad(power_kw=0.1),
+        )
+        self.assertNotIn("OVERLOAD", output)
 
     def test_power_flow_solver_refreshes_results_each_step(self):
         battery, inverter, lighting, heater = self._make_assets()
-        with redirect_stdout(io.StringIO()):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                heater,
-                dt_hours=0.25,
-            )
+        self._run_step(battery, inverter, lighting, heater)
         first_loading = self.net.res_line.at[0, "loading_percent"]
         first_voltage = self.net.res_bus.at[1, "vm_pu"]
         # A second step with a lighter load must yield genuinely recomputed
         # power-flow results, proving the solver ran again this tick.
-        light_heater = demo.HeaterLoad(power_kw=1.0)
-        with redirect_stdout(io.StringIO()):
-            demo.step_all(
-                self.net,
-                self.load_lighting,
-                self.load_heater,
-                self.sgen_battery,
-                battery,
-                inverter,
-                lighting,
-                light_heater,
-                dt_hours=0.25,
-            )
+        self._run_step(battery, inverter, lighting, demo.HeaterLoad(power_kw=1.0))
         self.assertLess(
             self.net.res_line.at[0, "loading_percent"],
             first_loading,

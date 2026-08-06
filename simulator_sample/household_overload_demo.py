@@ -208,4 +208,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # Let this be the only line we leave uncovered.
+    main()  # pragma: no cover

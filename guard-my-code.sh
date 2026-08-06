@@ -6,7 +6,7 @@ ruff format
 
 echo "🧩 Detect duplicates"
 if command -v npx &> /dev/null; then
-    npx jscpd .
+    npx jscpd --threshold 0 .
 else
     echo "⚠️  ✗ npx not found, skipping jscpd duplicate detection"
     read -p "Do you want to proceed anyway? (y/n) " -n 1 -r
