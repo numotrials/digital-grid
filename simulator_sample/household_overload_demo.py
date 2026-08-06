@@ -1,23 +1,23 @@
 """
 Illustrates the division of responsibility between:
 
-1. DIGITAL TWINS   - pure Python objects that know nothing about the
-                      electrical network. They just track their own
-                      internal state (battery charge, whether a load
+1. EQUIPMENT SIMULATORS - digital twins as pure Python objects
+                      that know nothing about the electrical network.
+                      They just track their own internal state
+                      (battery charge, whether a load
                       is on) and report a power value.
-
-2. INVERTER        - also a digital twin, but its job is specifically
+                      Includes the inverter - also a digital twin,
+                      but its job is specifically
                       to convert the battery's DC output to AC and
-                      cap it at its own rated capacity. It doesn't
-                      know about pandapower either.
+                      cap it at its own rated capacity.
 
-3. ELECTRICAL NETWORK (pandapower) - knows nothing about batteries or
+2. ELECTRICAL SYSTEM (pandapower) - knows nothing about batteries or
                       heaters as "things". It only knows about buses,
                       lines, loads (p_mw) and generators (p_mw), and
                       solves the physics: currents, voltages, line
                       loading.
 
-4. THE STEP FUNCTION - the only place that knows about BOTH worlds.
+3. THE STEP FUNCTION - the only place that knows about BOTH worlds.
                       It reads power values out of the twins and
                       writes them into the network, then asks
                       pandapower to solve and reports on overload.
