@@ -32,8 +32,8 @@ echo "🔐 Guard against secrets in code"
 git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
 
 echo "🧪 Run tests with coverage"
-rm -rf .coverage
-coverage run -p -m unittest discover
+rm -rf .coverage .coverage.*
+coverage run --branch -m unittest discover
 coverage report --fail-under=100
 coverage html
 
