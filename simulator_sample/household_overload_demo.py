@@ -27,6 +27,7 @@ one lighting load, one heater, one line. Not meant to be extended.
 """
 
 import pandapower as pp
+from devices.wind_turbine import WindTurbine
 
 
 # ---------------------------------------------------------------------------
@@ -127,8 +128,10 @@ def build_network() -> tuple[pp.pandapowerNet, pp.Int, pp.Int, pp.Int]:
     load_lighting = pp.create_load(net, bus=bus_house, p_mw=0.0, name="lighting")
     load_heater = pp.create_load(net, bus=bus_house, p_mw=0.0, name="heater")
     sgen_battery = pp.create_sgen(net, bus=bus_house, p_mw=0.0, name="battery_via_inverter")
+    sgen_wind = pp.create_sgen(
+    net, bus=bus_house, p_mw=0.0, name="wind_turbine")
 
-    return net, load_lighting, load_heater, sgen_battery
+    return net, load_lighting, load_heater, sgen_battery, sgen_wind
 
 
 # ---------------------------------------------------------------------------
@@ -143,10 +146,12 @@ def step_all(
     load_lighting_idx,
     load_heater_idx,
     sgen_battery_idx,
+    sgen_wind_idx,
     battery: BatteryTwin,
     inverter: Inverter,
     lighting: LightingLoad,
     heater: HeaterLoad,
+    wind_turbine: WindTurbine,
     dt_hours: float,
 ) -> None:
     # --- twins step on their own, oblivious to the network ---
@@ -154,11 +159,13 @@ def step_all(
     battery_ac_kw = inverter.convert(battery_dc_kw)
     lighting_kw = lighting.step(dt_hours)
     heater_kw = heater.step(dt_hours)
+    wind_turbine_kw = wind_turbine.calculate_power()
 
     # --- translate twin outputs into pandapower's units (MW) ---
     net.load.at[load_lighting_idx, "p_mw"] = lighting_kw / 1000.0
     net.load.at[load_heater_idx, "p_mw"] = heater_kw / 1000.0
     net.sgen.at[sgen_battery_idx, "p_mw"] = battery_ac_kw / 1000.0
+    net.sgen.at[sgen_wind_idx, "p_mw"] = wind_turbine_kw / 1000.0
 
     # --- network solves the physics, twins have no idea this happened ---
     pp.runpp(net)
@@ -169,6 +176,7 @@ def step_all(
     print(
         f"  battery soc={battery.soc:.3f}  "
         f"battery_ac={battery_ac_kw:.2f}kW  "
+        f"wind_turbine={wind_turbine_kw:.2f}kW  "
         f"lighting={lighting_kw:.2f}kW  heater={heater_kw:.2f}kW  "
         f"house_voltage={house_voltage_pu:.3f}pu  "
         f"line_loading={line_loading_pct:.1f}%"
@@ -184,12 +192,20 @@ def step_all(
 
 
 def main() -> None:
-    net, load_lighting_idx, load_heater_idx, sgen_battery_idx = build_network()
+    net, load_lighting_idx, load_heater_idx, sgen_battery_idx, sgen_wind_idx= build_network()
 
     battery = BatteryTwin(capacity_kwh=10.0, soc=0.8, discharge_kw=6.0)
     inverter = Inverter(rated_kva=5.0, efficiency=0.95)
     lighting = LightingLoad(power_kw=0.5)
     heater = HeaterLoad(power_kw=25.0)  # deliberately oversized to trigger overload
+
+    wind_turbine = WindTurbine(
+    rated_power=100.0,
+    rated_wind_speed=12.0,
+    )
+    wind_turbine.start()
+    wind_turbine.set_wind_speed(8.0)
+
 
     dt_hours = 0.25  # 15-minute ticks
     for tick in range(4):
@@ -199,10 +215,12 @@ def main() -> None:
             load_lighting_idx,
             load_heater_idx,
             sgen_battery_idx,
-            battery,
+            sgen_wind_idx,
+            battery,  
             inverter,
             lighting,
             heater,
+            wind_turbine,
             dt_hours,
         )
 
