@@ -1,6 +1,6 @@
 # test_meter.py
 import unittest
-from meter import DumbSmartMeter
+from .meter import DumbSmartMeter
 
 
 class TestDumbSmartMeter(unittest.TestCase):
