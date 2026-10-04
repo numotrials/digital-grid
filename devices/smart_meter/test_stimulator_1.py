@@ -103,14 +103,14 @@ class TestMain(unittest.TestCase):
         self.assertIn("Initial telemetry", output)
 
     @patch("builtins.input", side_effect=["connect", "exit"])
-    def test_main_accepts_exit_as_quit(self, mock_input):
+    def test_main_accepts_exit_as_quit(self, _mock_input):
         captured = io.StringIO()
         with patch("sys.stdout", captured):
             main()
         self.assertIn("Meter connected.", captured.getvalue())
 
     @patch("builtins.input", side_effect=KeyboardInterrupt)
-    def test_main_handles_keyboard_interrupt(self, mock_input):
+    def test_main_handles_keyboard_interrupt(self, _mock_input):
         captured = io.StringIO()
         with patch("sys.stdout", captured):
             main()
