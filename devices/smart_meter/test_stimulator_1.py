@@ -7,7 +7,6 @@ from .stimulator_1 import SmartMeter, run_command, main
 
 
 class TestSmartMeter(unittest.TestCase):
-
     def setUp(self):
         self.meter = SmartMeter(power_kw=2.5)
 
@@ -55,7 +54,6 @@ class TestSmartMeter(unittest.TestCase):
 
 
 class TestRunCommand(unittest.TestCase):
-
     def setUp(self):
         self.meter = SmartMeter(power_kw=2.5)
 
@@ -95,9 +93,8 @@ class TestRunCommand(unittest.TestCase):
 
 
 class TestMain(unittest.TestCase):
-
     @patch("builtins.input", side_effect=["status", "quit"])
-    def test_main_runs_status_then_quits(self, mock_input):
+    def test_main_runs_status_then_quits(self, _mock_input):
         captured = io.StringIO()
         with patch("sys.stdout", captured):
             main()
@@ -122,4 +119,3 @@ class TestMain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-    

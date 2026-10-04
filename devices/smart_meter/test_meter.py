@@ -3,7 +3,6 @@ from meter import DumbSmartMeter
 
 
 class TestDumbSmartMeter(unittest.TestCase):
-
     def setUp(self):
         self.meter = DumbSmartMeter()
 
