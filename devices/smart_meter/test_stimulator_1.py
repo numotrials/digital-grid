@@ -115,7 +115,3 @@ class TestMain(unittest.TestCase):
         with patch("sys.stdout", captured):
             main()
         self.assertIn("Smart Meter Simulator", captured.getvalue())
-
-
-if __name__ == "__main__":
-    unittest.main()

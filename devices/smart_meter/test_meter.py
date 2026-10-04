@@ -22,7 +22,3 @@ class TestDumbSmartMeter(unittest.TestCase):
     def test_telemetry_matches_example(self):
         self.meter.connect()
         self.assertEqual(self.meter.get_telemetry(), {"power": 2.5, "status": "Connected"})
-
-
-if __name__ == "__main__":
-    unittest.main()
